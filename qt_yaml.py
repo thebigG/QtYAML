@@ -142,11 +142,51 @@ SETTINGS_YAML_SCHEMA = {
     },
 }
 
-# TODO: Look at the workflow from UI form to CPP file in Qt.
+ui_obj = UI.UI(version="4.0", class_="YAMLForm")
 
-ui_obj = UI.UI()
 
-widget = UI.Widget(class__attr="QMainWindow", name="MainWindow")
+def from_schema_to_widget(schema: dict):
+    widget_container = UI.Widget(class__attr="QWidget", name="YAMLForm")
 
-ui_obj.set_widget(widget)
-ui_obj.export(open("new_file", "w+"), 0)
+    rect_property = UI.Property()
+    rect_property.set_name("geometry")
+    rect_property.set_rect(UI.Rect(width=400, height=400, x=0, y=0))
+    widget_container.add_property(rect_property)
+    layout = UI.Layout(class_="QGridLayout", name="gridLayout")
+    current_row = 0
+    for setting in schema:
+        setting_node = schema[setting]
+        if 'type' in setting_node and \
+                setting_node['type'] == 'string':
+            label_wdget = UI.Widget(class__attr="QLabel", name="setting")
+            label_property = UI.Property()
+            label_property.set_name("text")
+            text_label = UI.String()
+            text_label.set_valueOf_(setting)
+            label_property.set_string(text_label)
+            label_wdget.add_property(label_property)
+
+            text_edit = UI.Widget(class__attr="QLineEdit", name="edit_setting_"+setting)
+
+            #
+            layout.add_item(UI.LayoutItem(row=current_row, column=current_row, widget=label_wdget))
+            layout.add_item(UI.LayoutItem(row=current_row, column=current_row, widget=text_edit))
+            #
+
+    widget_container.set_layout([layout])
+
+    return widget_container
+
+
+form = from_schema_to_widget(SETTINGS_YAML_SCHEMA)
+ui_obj.set_widget(form)
+
+
+# ui_obj.set_class()
+
+ui_obj.export(open("new_file.xml", "w+"), 0, name_='ui')
+# widget = UI.Widget(class__attr="QMainWindow", name="MainWindow")
+
+# ui_obj.set_widget(widget)
+
+# ui_obj.export(open("new_file", "w+"), 0)
