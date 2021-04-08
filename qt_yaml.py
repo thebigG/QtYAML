@@ -142,12 +142,61 @@ SETTINGS_YAML_SCHEMA = {
     },
 }
 
-ui_obj = UI.UI(version="4.0", class_="YAMLForm")
 
+def __add_form_label_row(label: str, grid_layout: UI.Layout, row):
+    """
+    Adds a label and a QLineEdit on the same row of grid_layout
+    :param label:
+    :param grid_layout:
+    :param row:
+    :return:
+    """
+    label_wdget = UI.Widget(class__attr="QLabel", name="setting")
+    label_property = UI.Property()
+    label_property.set_name("text")
+    text_label = UI.String()
+    text_label.set_valueOf_(label)
+    label_property.set_string(text_label)
+    label_wdget.add_property(label_property)
+
+    text_edit = UI.Widget(class__attr="QLineEdit", name="edit_setting_" + label)
+
+    grid_layout.add_item(UI.LayoutItem(row=row, column=0, widget=label_wdget))
+    grid_layout.add_item(UI.LayoutItem(row=row, column=1, widget=text_edit))
+
+def __add_form_boolean_row(label: str, grid_layout: UI.Layout, row, checked: bool = False):
+    """
+    Adds a label and a QLineEdit on the same row of grid_layout
+    :param label:
+    :param grid_layout:
+    :param row:
+    :return:
+    """
+    label_wdget = UI.Widget(class__attr="QLabel", name="setting")
+    label_property = UI.Property()
+    label_property.set_name("text")
+    text_label = UI.String()
+    text_label.set_valueOf_(label)
+    label_property.set_string(text_label)
+    label_wdget.add_property(label_property)
+
+    checkbox_text_label = UI.String()
+    checkbox_text_label.set_valueOf_(label + "_check")
+    checkbox_label_property = UI.Property()
+    checkbox_label_property.set_name("text")
+    checkbox_label_property.set_string(checkbox_text_label)
+
+    check_box = UI.Widget(class__attr="QCheckBox", name="edit_setting_" + label)
+
+    checked_property = UI.Property(bool=str(checked).lower())
+    check_box.add_property(checked_property)
+    check_box.add_property(checkbox_label_property)
+
+    grid_layout.add_item(UI.LayoutItem(row=row, column=0, widget=label_wdget))
+    grid_layout.add_item(UI.LayoutItem(row=row, column=1, widget=check_box))
 
 def from_schema_to_widget(schema: dict):
     widget_container = UI.Widget(class__attr="QWidget", name="YAMLForm")
-
     rect_property = UI.Property()
     rect_property.set_name("geometry")
     rect_property.set_rect(UI.Rect(width=400, height=400, x=0, y=0))
@@ -158,25 +207,17 @@ def from_schema_to_widget(schema: dict):
         setting_node = schema[setting]
         if 'type' in setting_node and \
                 setting_node['type'] == 'string':
-            label_wdget = UI.Widget(class__attr="QLabel", name="setting")
-            label_property = UI.Property()
-            label_property.set_name("text")
-            text_label = UI.String()
-            text_label.set_valueOf_(setting)
-            label_property.set_string(text_label)
-            label_wdget.add_property(label_property)
-
-            text_edit = UI.Widget(class__attr="QLineEdit", name="edit_setting_"+setting)
-
-            #
-            layout.add_item(UI.LayoutItem(row=current_row, column=current_row, widget=label_wdget))
-            layout.add_item(UI.LayoutItem(row=current_row, column=current_row, widget=text_edit))
-            #
+            __add_form_label_row(setting, layout, current_row)
+            current_row += 1
+        elif 'type' in setting_node and \
+                setting_node['type'] == 'boolean':
+            __add_form_boolean_row(setting, layout, current_row)
 
     widget_container.set_layout([layout])
 
     return widget_container
 
+ui_obj = UI.UI(version="4.0", class_="YAMLForm")
 
 form = from_schema_to_widget(SETTINGS_YAML_SCHEMA)
 ui_obj.set_widget(form)
