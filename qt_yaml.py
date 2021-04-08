@@ -208,11 +208,12 @@ def from_schema_to_widget(schema: dict):
         if 'type' in setting_node and \
                 setting_node['type'] == 'string':
             __add_form_label_row(setting, layout, current_row)
-            current_row += 1
+
         elif 'type' in setting_node and \
                 setting_node['type'] == 'boolean':
             __add_form_boolean_row(setting, layout, current_row)
 
+        current_row += 1
     widget_container.set_layout([layout])
 
     return widget_container
