@@ -1,4 +1,10 @@
+import sys
+
+from PyQt5.QtCore import QFile
+from PyQt5.QtWidgets import QWidget, QApplication
+
 import UI
+from PyQt5.uic import loadUi
 
 LOG_LEVEL_NAMES = [
     'CRITICAL', 'FATAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET'
@@ -17,7 +23,7 @@ SETTINGS_YAML_SCHEMA = {
     'cache_folder': {
         'required': True,
         'type': 'string',
-        },
+    },
     'duplicates_list_file': {
         'required': True,
         'type': 'string',
@@ -31,9 +37,11 @@ SETTINGS_YAML_SCHEMA = {
         'type': 'boolean',
         'default': False,
     },
+    # FIXME: Add type here
     'log_level': {
         'required': False,
         'allowed': LOG_LEVEL_NAMES,
+        'type': list,
         'default': DEFAULT_LOG_LEVEL_NAME,
     },
     'search': {
@@ -42,12 +50,12 @@ SETTINGS_YAML_SCHEMA = {
         'schema': {
             'providers': {
                 'required': False,
-                'allowed': [1,2,3],
-                'default': [2,3],
+                'allowed': [1, 2, 3],
+                'default': [2, 3],
             },
-            'locale' : {
+            'locale': {
                 'required': True,
-                'allowed': [1,2,3],
+                'allowed': [1, 2, 3],
             },
             'province_or_state': {'required': True, 'type': 'string'},
             'city': {'required': True, 'type': 'string'},
@@ -79,7 +87,7 @@ SETTINGS_YAML_SCHEMA = {
                 'schema': {'type': 'string'},
                 'default': ["comp1", "comp2"],
             },
-            'remoteness' : {
+            'remoteness': {
                 'required': False,
                 'type': 'string',
                 'allowed': ["1", "2"],
@@ -90,10 +98,10 @@ SETTINGS_YAML_SCHEMA = {
     'delay': {
         'type': 'dict',
         'required': False,
-        'schema' : {
+        'schema': {
             'algorithm': {
                 'required': False,
-                'allowed': [1,2, 3],
+                'allowed': [1, 2, 3],
                 'default': 1,
             },
             # TODO: implement custom rule max > min
@@ -124,7 +132,7 @@ SETTINGS_YAML_SCHEMA = {
     'proxy': {
         'type': 'dict',
         'required': False,
-        'schema' : {
+        'schema': {
             'protocol': {
                 'required': False,
                 'allowed': ['http', 'https'],
@@ -164,6 +172,7 @@ def __add_form_label_row(label: str, grid_layout: UI.Layout, row):
     grid_layout.add_item(UI.LayoutItem(row=row, column=0, widget=label_wdget))
     grid_layout.add_item(UI.LayoutItem(row=row, column=1, widget=text_edit))
 
+
 def __add_form_boolean_row(label: str, grid_layout: UI.Layout, row, checked: bool = False):
     """
     Adds a label and a QLineEdit on the same row of grid_layout
@@ -188,7 +197,40 @@ def __add_form_boolean_row(label: str, grid_layout: UI.Layout, row, checked: boo
 
     check_box = UI.Widget(class__attr="QCheckBox", name="edit_setting_" + label)
 
-    checked_property = UI.Property(bool=str(checked).lower())
+    checked_property = UI.Property(bool=str(checked).lower(), name="checked")
+    check_box.add_property(checked_property)
+    check_box.add_property(checkbox_label_property)
+
+    grid_layout.add_item(UI.LayoutItem(row=row, column=0, widget=label_wdget))
+    grid_layout.add_item(UI.LayoutItem(row=row, column=1, widget=check_box))
+
+
+# FIXME: Fiinish this function
+def __add_form_dropdown_row(label: str, grid_layout: UI.Layout, row, checked: bool = False):
+    """
+    Adds a label and a QLineEdit on the same row of grid_layout
+    :param label:
+    :param grid_layout:
+    :param row:
+    :return:
+    """
+    label_wdget = UI.Widget(class__attr="QComboBox", name="setting")
+    label_property = UI.Property()
+    label_property.set_name("text")
+    text_label = UI.String()
+    text_label.set_valueOf_(label)
+    label_property.set_string(text_label)
+    label_wdget.add_property(label_property)
+
+    dropdown_text_label = UI.String()
+    dropdown_text_label.set_valueOf_(label + "_check")
+    checkbox_label_property = UI.Property()
+    checkbox_label_property.set_name("text")
+    checkbox_label_property.set_string(dropdown_text_label)
+
+    check_box = UI.Widget(class__attr="QCheckBox", name="edit_setting_" + label)
+
+    checked_property = UI.Property(bool=str(checked).lower(), name="checked")
     check_box.add_property(checked_property)
     check_box.add_property(checkbox_label_property)
 
@@ -218,17 +260,39 @@ def from_schema_to_widget(schema: dict):
 
     return widget_container
 
-ui_obj = UI.UI(version="4.0", class_="YAMLForm")
 
-form = from_schema_to_widget(SETTINGS_YAML_SCHEMA)
-ui_obj.set_widget(form)
+def write_file():
+    f = open("new_file.xml", "w+")
+    ui_obj = UI.UI(version="4.0", class_="YAMLForm")
+
+    form = from_schema_to_widget(SETTINGS_YAML_SCHEMA)
+    ui_obj.set_widget(form)
+
+    ui_obj.export(open("new_file.xml", "w+"), 0, name_='ui')
+
+def render_file():
+    f = QFile("new_file.xml")
+    f.open(QFile.ReadOnly)
+    app = QApplication(sys.argv)  # 1. Instantiate ApplicationContext
+    # window = QMainWindow()
+    # window.resize(250, 150)
+    # window.show()
+    a = BaseGUIWidget(ui_file=f)
+    a.show()
+    app.exec()
 
 
-# ui_obj.set_class()
+class BaseGUIWidget(QWidget):
+    def __init__(self, parent=None, ui_file=None):
+        '''
+        :param parent: parent widget of this widget
+        :param ui_file: path to UI file to load (optional)
+        '''
+        super(BaseGUIWidget, self).__init__(parent)
+        if ui_file is not None:
+            loadUi(ui_file, self)
 
-ui_obj.export(open("new_file.xml", "w+"), 0, name_='ui')
-# widget = UI.Widget(class__attr="QMainWindow", name="MainWindow")
 
-# ui_obj.set_widget(widget)
-
-# ui_obj.export(open("new_file", "w+"), 0)
+if __name__ == '__main__':
+    render_file()
+    # write_file()
